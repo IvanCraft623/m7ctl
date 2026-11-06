@@ -1,0 +1,12 @@
+[package]
+name = "m7ctl"
+version = "0.1.0"
+edition = "2021"
+description = "Controller for the Machenike M7 Pro mouse (DPI, polling rate, buttons, lighting, macros)"
+license = "MIT"
+
+[dependencies]
+
+[profile.release]
+opt-level = 2
+strip = true
