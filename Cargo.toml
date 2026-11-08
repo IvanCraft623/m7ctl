@@ -6,6 +6,9 @@ description = "Controller for the Machenike M7 Pro mouse (DPI, polling rate, but
 license = "MIT"
 
 [dependencies]
+clap = { version = "4.6.7", features = ["derive", "wrap_help"] }
+clap_complete = "4.6.11"
+clap_mangen = "0.3.3"
 dirs = "7.0.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
