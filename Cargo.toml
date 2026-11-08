@@ -6,6 +6,7 @@ description = "Controller for the Machenike M7 Pro mouse (DPI, polling rate, but
 license = "MIT"
 
 [dependencies]
+dirs = "7.0.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 hidapi = { version = "2.6.7", default-features = false, features = ["linux-native-basic-udev"] }
