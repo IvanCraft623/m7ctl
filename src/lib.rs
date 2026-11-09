@@ -5,3 +5,5 @@ pub mod device;
 pub mod notify;
 pub mod protocol;
 pub mod settings;
+#[cfg(feature = "tui")]
+pub mod tui;

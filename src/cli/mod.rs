@@ -119,6 +119,9 @@ pub enum Command {
     Completions { shell: clap_complete::Shell },
     #[command(hide = true)]
     Man,
+    /// Interactive terminal interface
+    #[cfg(feature = "tui")]
+    Tui,
 }
 
 #[derive(Args, Debug)]
@@ -262,6 +265,8 @@ pub fn run(command: Command, ctx: &Context, out: &mut dyn Write) -> Result<(), S
             Ok(())
         }
         Command::Man => write!(out, "{}", man_page()?).map_err(|e| e.to_string()),
+        #[cfg(feature = "tui")]
+        Command::Tui => crate::tui::run(ctx.clone()),
         other => apply::run(other, ctx, out),
     }
 }
