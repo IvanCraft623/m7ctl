@@ -4,6 +4,7 @@
 mod apply;
 mod info;
 mod profile;
+mod watch;
 
 use crate::device::Mouse;
 use crate::settings::Store;
@@ -108,6 +109,12 @@ pub enum Command {
     /// Save, load and inspect named copies of the settings
     #[command(subcommand)]
     Profile(ProfileCmd),
+    /// Print a line (and optionally show a popup) whenever the DPI stage changes
+    Watch {
+        /// Also show a desktop popup
+        #[arg(long)]
+        notify: bool,
+    },
     /// Print a shell completion script
     Completions { shell: clap_complete::Shell },
     #[command(hide = true)]
@@ -249,6 +256,7 @@ pub fn run(command: Command, ctx: &Context, out: &mut dyn Write) -> Result<(), S
         Command::List { verbose } => info::list(verbose, out),
         Command::Status { json } => info::status(ctx, json, out),
         Command::Profile(p) => profile::run(p, ctx, out),
+        Command::Watch { notify } => watch::run(ctx, notify, out),
         Command::Completions { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "m7ctl", &mut *out);
             Ok(())

@@ -2,5 +2,6 @@
 
 pub mod cli;
 pub mod device;
+pub mod notify;
 pub mod protocol;
 pub mod settings;
