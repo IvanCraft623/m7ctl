@@ -1,0 +1,2 @@
+# Let the logged-in user configure the Machenike M7 Pro (wired 248a:5b2e, wireless receiver 248a:5b2f).
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="248a", ATTRS{idProduct}=="5b2e|5b2f", TAG+="uaccess"
