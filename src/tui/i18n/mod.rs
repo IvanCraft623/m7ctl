@@ -73,6 +73,11 @@ impl Lang {
     pub(crate) const ALL: [Lang; 2] = [Lang::En, Lang::Es];
 }
 
+#[cfg(test)]
+pub(crate) fn set_language_for_this_thread(l: Option<Lang>) {
+    OVERRIDE.with(|o| o.set(l));
+}
+
 fn catalog(l: Lang) -> &'static [(&'static str, &'static str)] {
     match l {
         Lang::En => &[],
@@ -163,5 +168,16 @@ mod tests {
         assert_eq!(captures("macro {} stored ({} events)", "macro 3 stored (12 events)"), Some(vec!["3", "12"]));
         assert_eq!(captures("macro {} stored ({} events)", "macro 3 cleared"), None);
         assert_eq!(fill("macro {} guardada ({} eventos)", &["3", "12"]), "macro 3 guardada (12 eventos)");
+    }
+
+    #[test]
+    fn spanish_translates_and_english_is_untouched() {
+        set_language_for_this_thread(Some(Lang::En));
+        assert_eq!(tr("Starting stage"), "Starting stage");
+        set_language_for_this_thread(Some(Lang::Es));
+        assert_ne!(tr("Starting stage"), "Starting stage");
+        assert!(tr("macro 3 stored (12 events)").contains("12"));
+        assert_eq!(tr("key:ctrl+c"), "key:ctrl+c", "unknown text falls back to itself");
+        set_language_for_this_thread(None);
     }
 }
