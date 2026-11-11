@@ -4,17 +4,26 @@
 #   ./dist/install.sh --copy     copy the binary instead (stays put if this folder moves)
 #   ./dist/install.sh --no-udev  skip the udev rule (it needs sudo)
 #   ./dist/install.sh --uninstall
+# From a release archive the script sits next to the binary and copies it.
 set -eu
 
-here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-bin="$here/target/release/m7ctl"
+script=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -x "$script/m7ctl" ]; then
+    bin="$script/m7ctl"
+    rule_src="$script/70-machenike-m7.rules"
+    mode=copy
+else
+    here=$(CDPATH= cd -- "$script/.." && pwd)
+    bin="$here/target/release/m7ctl"
+    rule_src="$here/dist/udev/70-machenike-m7.rules"
+    mode=link
+fi
 dest_bin="$HOME/.local/bin/m7ctl"
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 conf="${XDG_CONFIG_HOME:-$HOME/.config}"
-rule_src="$here/dist/udev/70-machenike-m7.rules"
 rule_dst=/etc/udev/rules.d/70-machenike-m7.rules
 
-mode=link; udev=yes; uninstall=no
+udev=yes; uninstall=no
 for a in "$@"; do
     case "$a" in
         --copy) mode=copy ;;

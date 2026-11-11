@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Controller for the Machenike M7 Pro mouse (DPI, polling rate, buttons, lighting, macros)"
 license = "MIT"
+repository = "https://github.com/IvanCraft623/m7ctl"
 
 # The terminal UI (`m7ctl tui`) is an optional feature; build with `--no-default-features` for a smaller binary.
 [features]

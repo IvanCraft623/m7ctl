@@ -1,0 +1,136 @@
+name: Release
+
+# Pushing a tag like v0.1.0 builds every platform and publishes a GitHub release.
+# Running the workflow by hand (workflow_dispatch) builds the same archives without publishing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        shell: bash
+        run: |
+          crate=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            if [ "$GITHUB_REF_NAME" != "v$crate" ]; then
+              echo "tag $GITHUB_REF_NAME does not match the version in Cargo.toml ($crate)" >&2
+              exit 1
+            fi
+            echo "version=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=v$crate-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: version
+    name: build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            targets: x86_64-unknown-linux-musl
+            bin: target/x86_64-unknown-linux-musl/release/m7ctl
+            kind: tar.gz
+            runnable: true
+            experimental: false
+          - name: linux-aarch64
+            os: ubuntu-latest
+            targets: aarch64-unknown-linux-musl
+            bin: target/aarch64-unknown-linux-musl/release/m7ctl
+            kind: tar.gz
+            runnable: false
+            experimental: false
+          - name: windows-x86_64
+            os: windows-latest
+            targets: x86_64-pc-windows-msvc
+            bin: target/x86_64-pc-windows-msvc/release/m7ctl.exe
+            kind: zip
+            runnable: true
+            experimental: false
+          - name: windows-aarch64
+            os: windows-latest
+            targets: aarch64-pc-windows-msvc
+            bin: target/aarch64-pc-windows-msvc/release/m7ctl.exe
+            kind: zip
+            runnable: false
+            experimental: true
+          - name: macos-universal
+            os: macos-latest
+            targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bin: target/universal/m7ctl
+            kind: tar.gz
+            runnable: true
+            experimental: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.targets }}
+      - name: Install zig (cross-compiles the Linux builds)
+        if: startsWith(matrix.name, 'linux-')
+        run: pip install ziglang cargo-zigbuild
+      - name: Build
+        shell: bash
+        run: |
+          case "${{ matrix.name }}" in
+            linux-*)
+              cargo zigbuild --release --locked --target "${{ matrix.targets }}" ;;
+            macos-universal)
+              cargo build --release --locked --target aarch64-apple-darwin
+              cargo build --release --locked --target x86_64-apple-darwin
+              mkdir -p target/universal
+              lipo -create -output target/universal/m7ctl \
+                target/aarch64-apple-darwin/release/m7ctl target/x86_64-apple-darwin/release/m7ctl ;;
+            *)
+              cargo build --release --locked --target "${{ matrix.targets }}" ;;
+          esac
+      - name: Smoke test
+        if: matrix.runnable
+        shell: bash
+        run: |
+          "${{ matrix.bin }}" --version
+          "${{ matrix.bin }}" list || echo "list failed (no HID access on this runner?)"
+      - name: Package
+        shell: bash
+        run: sh dist/package.sh "${{ matrix.name }}" "${{ needs.version.outputs.version }}" "${{ matrix.bin }}" "${{ matrix.kind }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m7ctl-${{ matrix.name }}
+          path: m7ctl-*.${{ matrix.kind }}
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Checksums
+        run: cd out && sha256sum * > SHA256SUMS && cat SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags="--generate-notes"
+          case "$TAG" in v0.*) flags="$flags --prerelease" ;; esac
+          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --title "$TAG" $flags

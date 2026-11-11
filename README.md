@@ -15,7 +15,22 @@ Machenike; use at your own risk.
 Tested on Linux with a wired mouse and the wireless receiver. Windows and macOS builds are compiled and unit-tested in CI
 but not yet tried on real hardware; reports are welcome (`m7ctl list --verbose` and `m7ctl status` output helps).
 
-## Install
+## Download
+
+Prebuilt binaries are attached to each [release](https://github.com/IvanCraft623/m7ctl/releases), with a `SHA256SUMS` file.
+
+| System | File |
+|---|---|
+| Linux x86_64 / ARM64 | `m7ctl-<version>-linux-x86_64.tar.gz`, `…-linux-aarch64.tar.gz` |
+| Windows x86_64 / ARM64 | `m7ctl-<version>-windows-x86_64.zip`, `…-windows-aarch64.zip` |
+| macOS (Intel and Apple Silicon) | `m7ctl-<version>-macos-universal.tar.gz` |
+
+The binaries are not code-signed, so the system warns the first time:
+- **Windows:** SmartScreen shows "Windows protected your PC": click *More info*, then *Run anyway*. Run `m7ctl.exe` from PowerShell.
+- **macOS:** run `xattr -d com.apple.quarantine m7ctl` once after unzipping, or right-click the file and choose *Open*.
+- **Linux:** extract, run `./install.sh` (copies the binary to `~/.local/bin`, adds shell completions and the udev rule), then replug the mouse.
+
+## Build from source
 
 ```bash
 cargo build --release
