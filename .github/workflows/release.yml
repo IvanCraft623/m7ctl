@@ -1,10 +1,10 @@
 name: Release
 
-# Pushing a tag like v0.1.0 builds every platform and publishes a GitHub release.
+# Pushing a version tag like 0.1.0 builds every platform and publishes a GitHub release.
 # Running the workflow by hand (workflow_dispatch) builds the same archives without publishing.
 on:
   push:
-    tags: ["v*"]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
         if: github.ref_type == 'tag'
         run: |
           crate=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
-          if [ "$GITHUB_REF_NAME" != "v$crate" ]; then
+          if [ "$GITHUB_REF_NAME" != "$crate" ]; then
             echo "tag $GITHUB_REF_NAME does not match the version in Cargo.toml ($crate)" >&2
             exit 1
           fi
