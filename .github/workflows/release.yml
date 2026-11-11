@@ -11,28 +11,21 @@ permissions:
   contents: read
 
 jobs:
-  version:
+  check-version:
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - id: v
-        shell: bash
+      - name: The tag matches the version in Cargo.toml
+        if: github.ref_type == 'tag'
         run: |
           crate=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-            if [ "$GITHUB_REF_NAME" != "v$crate" ]; then
-              echo "tag $GITHUB_REF_NAME does not match the version in Cargo.toml ($crate)" >&2
-              exit 1
-            fi
-            echo "version=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=v$crate-dev" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_NAME" != "v$crate" ]; then
+            echo "tag $GITHUB_REF_NAME does not match the version in Cargo.toml ($crate)" >&2
+            exit 1
           fi
 
   build:
-    needs: version
+    needs: check-version
     name: build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
@@ -106,7 +99,7 @@ jobs:
           "${{ matrix.bin }}" list || echo "list failed (no HID access on this runner?)"
       - name: Package
         shell: bash
-        run: sh dist/package.sh "${{ matrix.name }}" "${{ needs.version.outputs.version }}" "${{ matrix.bin }}" "${{ matrix.kind }}"
+        run: sh dist/package.sh "${{ matrix.name }}" "${{ matrix.bin }}" "${{ matrix.kind }}"
       - uses: actions/upload-artifact@v4
         with:
           name: m7ctl-${{ matrix.name }}
@@ -115,7 +108,7 @@ jobs:
 
   release:
     if: github.ref_type == 'tag'
-    needs: [version, build]
+    needs: [check-version, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -131,6 +124,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          flags="--generate-notes"
-          case "$TAG" in v0.*) flags="$flags --prerelease" ;; esac
-          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --title "$TAG" $flags
+          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes

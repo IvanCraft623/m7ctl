@@ -1,13 +1,14 @@
 #!/bin/sh
 # Build a release archive in the current directory.
-#   dist/package.sh <name> <version> <binary> <tar.gz|zip>
-# e.g. dist/package.sh linux-x86_64 v0.1.0 target/release/m7ctl tar.gz
+#   dist/package.sh <name> <binary> <tar.gz|zip>
+# e.g. dist/package.sh linux-x86_64 target/release/m7ctl tar.gz   (writes m7ctl-linux-x86_64.tar.gz)
+# The file name has no version, so .../releases/latest/download/<file> always points at the newest release.
 set -eu
 
-[ $# -eq 4 ] || { sed -n '2,4p' "$0"; exit 2; }
-name=$1 version=$2 bin=$3 kind=$4
+[ $# -eq 3 ] || { sed -n '2,4p' "$0"; exit 2; }
+name=$1 bin=$2 kind=$3
 here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-dir="m7ctl-$version-$name"
+dir="m7ctl-$name"
 
 rm -rf "$dir"
 mkdir "$dir"
