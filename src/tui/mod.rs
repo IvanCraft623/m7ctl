@@ -188,7 +188,9 @@ pub fn run(ctx: Context) -> Result<(), String> {
     // progress messages ("the mouse is asleep...") belong in the log, not on the terminal
     let (tx, notice_ctx) = (std::sync::Mutex::new(app.bg.tx.clone()), &mut app.ctx);
     notice_ctx.notice = Arc::new(move |m| {
-        let _ = tx.lock().map(|t| t.send(Msg::Line(m.to_string())));
+        if let Ok(t) = tx.lock() {
+            let _ = t.send(Msg::Line(m.to_string()));
+        }
     });
     let runner_ctx = app.ctx.clone();
     app.bg.runner = Arc::new(InProcess(runner_ctx));

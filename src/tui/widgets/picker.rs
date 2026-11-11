@@ -267,18 +267,14 @@ impl App {
             }
             KeyCode::Tab => p.idx = (p.idx + 1) % p.colors.len(),
             KeyCode::BackTab => p.idx = (p.idx + p.colors.len() - 1) % p.colors.len(),
-            KeyCode::Char('+') => {
-                if p.colors.len() < p.max {
-                    let last = p.colors[p.idx];
-                    p.colors.insert(p.idx + 1, last);
-                    p.idx += 1;
-                }
+            KeyCode::Char('+') if p.colors.len() < p.max => {
+                let last = p.colors[p.idx];
+                p.colors.insert(p.idx + 1, last);
+                p.idx += 1;
             }
-            KeyCode::Char('-') => {
-                if p.colors.len() > 1 {
-                    p.colors.remove(p.idx);
-                    p.idx = p.idx.min(p.colors.len() - 1);
-                }
+            KeyCode::Char('-') if p.colors.len() > 1 => {
+                p.colors.remove(p.idx);
+                p.idx = p.idx.min(p.colors.len() - 1);
             }
             _ => {}
         }
